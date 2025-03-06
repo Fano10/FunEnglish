@@ -2,9 +2,9 @@ name: CI - Build & Test
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, dev]
   pull_request:
-    branches: [main, develop]
+    branches: [main, dev]
 
 
 jobs:
@@ -15,17 +15,17 @@ jobs:
      - name: Checkout Repository
        uses: actions/checkout@v4
 
-     - name: Change directory
-       run: cd Frontend
-
      - name: Setup Node.js
        uses: actions/setup-node@v4
        with:
         node-version: 18
         cache: 'npm'
+        cache-dependency-path: Frontend/package-lock.json
 
      - name: Install Dependencies
        run: npm install
+       working-directory: Frontend
 
      - name: Run Tests
-       run: npm test 
+       run: npm test
+       working-directory: Frontend
