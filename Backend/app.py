@@ -1,5 +1,7 @@
 import yaml
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
+import json
+import re
 import requests
 
 app = Flask(__name__)
@@ -13,6 +15,13 @@ wordType = "verb"
 
 @app.route('/vocabulary', methods=['POST'])
 def get_newVocabulary():
+
+    if (request.headers.get('Content-Type') == 'application/json'):
+        data = request.get_json()
+        theme = data["theme"]
+        nature = data["nature"]
+    
+    content = str("Theme: " +theme+ ", nature: " + nature+ ", word already know: promotion")
     url = "https://api.openai.com/v1/chat/completions"
     headers = {
         "Content-Type" : "application/json",
@@ -23,36 +32,13 @@ def get_newVocabulary():
     "messages": [
         {
             "role": "system",
-            "content": "You are a great English teacher. The person attending your class is an A2 level student and wants to reach B2 level. Your goal is to provide him with a new word and its definition according to the theme chosen by the student and the nature of the word."
+            "content": "You are an excellent English teacher. The person attending your class is an A2 level student and wants to reach B2 level. Your goal is to provide him with only a new word, its definition and an example based on the theme chosen by the student and the nature of the word. But be careful, the student will also provide you with words that he already knows, so it is important not to return these words. The return response must be strictly in JSON format no comment with the keys: word, definition and example"
         },
         {
             "role": "user",
-            "content": "Theme: job, nature: word"
+            "content": content
         }
     ],
-    "tools": [
-        {
-            "type": "function",
-            "function": {
-                "name": "get_new_word",
-                "description": "Provides a new English word and its definition based on a theme and word nature",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "word": {
-                            "type": "string",
-                            "description": "The new English word"
-                        },
-                        "definition": {
-                            "type": "string",
-                            "description": "The definition of the word"
-                        }
-                    },
-                    "required": ["word", "definition"]
-                }
-            }
-        }
-    ]
 }
 
 
@@ -60,9 +46,16 @@ def get_newVocabulary():
 
     print (response)
     if response.status_code == 200:
-        return response.json()
+        body = response.json()
+        body_value = body["choices"][0]["message"]["content"]
+
+        body_value = re.sub('^(```json)?','',body_value)
+        body_value = re.sub('`+','',body_value)
+        body_value_json = json.loads(body_value)
+        print(body_value_json)
+        return body_value_json
     else:
         return "Not okay"
     
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
